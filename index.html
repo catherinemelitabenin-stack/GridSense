@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a1020">
+
+    <title>GridSense | Energy Intelligence</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Load Chart.js before script.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<div class="app-shell">
+
+    <!-- Top navigation -->
+    <header class="topbar">
+        <a class="brand" href="#">
+            <span class="brand-mark">ϟ</span>
+
+            <span class="brand-copy">
+                <strong>GridSense</strong>
+                <small>ENERGY INTELLIGENCE</small>
+            </span>
+        </a>
+
+        <div class="topbar-right">
+            <span id="sourceBadge" class="environment-pill demo-source">
+                ● SIMULATED DEMO
+            </span>
+
+            <span class="topbar-divider"></span>
+
+            <span class="system-label">
+                <span class="system-pulse"></span>
+                Forecast system
+            </span>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Page heading -->
+        <section class="page-heading">
+            <div class="heading-copy">
+                <div class="eyebrow">
+                    <span class="eyebrow-line"></span>
+                    MICROGRID OPERATIONS
+                </div>
+
+                <h1>Energy forecast <span>&amp; dispatch</span></h1>
+
+                <p>
+                    Anticipate demand, monitor overload risk, and guide
+                    power-source decisions.
+                </p>
+            </div>
+
+            <div class="heading-actions">
+                <label class="refresh-button upload-button" for="telemetryFile">
+                    Upload telemetry CSV
+                </label>
+
+                <input
+                    id="telemetryFile"
+                    type="file"
+                    accept=".csv,text/csv"
+                    aria-label="Choose telemetry CSV file"
+                >
+
+                <button
+                    id="refreshBtn"
+                    class="refresh-button"
+                    type="button"
+                >
+                    <span class="refresh-icon">↻</span>
+                    <span class="refresh-label">Refresh forecast</span>
+                </button>
+            </div>
+        </section>
+
+        <p id="uploadStatus" role="status" aria-live="polite"></p>
+
+        <!-- Forecast information -->
+        <section class="overview-strip">
+            <div class="overview-item">
+                <span class="overview-label">FORECAST WINDOW</span>
+                <strong>Next 24 hours</strong>
+            </div>
+
+            <span class="overview-separator"></span>
+
+            <div class="overview-item">
+                <span class="overview-label">MODEL OUTPUT</span>
+                <strong>
+                    <span class="tiny-live-dot"></span>
+                    Predicted demand
+                </strong>
+            </div>
+
+            <span class="overview-separator"></span>
+
+            <div class="overview-item">
+                <span class="overview-label">DISPATCH POLICY</span>
+                <strong>Rule-based control</strong>
+            </div>
+
+            <div class="updated-label" id="updatedLabel">
+                Waiting for forecast…
+            </div>
+        </section>
+
+        <!-- Summary metrics -->
+        <section class="metrics">
+
+            <article class="metric metric-primary">
+                <div class="metric-top">
+                    <span class="metric-label">Peak predicted demand</span>
+                    <span class="metric-icon icon-teal">⌁</span>
+                </div>
+
+                <h2 id="peakDemand">-- <small>kW</small></h2>
+
+                <div class="metric-foot">
+                    <span class="metric-indicator teal-indicator"></span>
+                    Highest value in forecast window
+                </div>
+            </article>
+
+            <article class="metric">
+                <div class="metric-top">
+                    <span class="metric-label">Recommended source</span>
+                    <span class="metric-icon icon-blue">⇄</span>
+                </div>
+
+                <h2 id="currentMode" class="source-value">--</h2>
+
+                <div class="metric-foot">
+                    <span class="metric-indicator blue-indicator"></span>
+                    Based on dispatch rules
+                </div>
+            </article>
+
+            <article class="metric">
+                <div class="metric-top">
+                    <span class="metric-label">Battery charge</span>
+                    <span class="metric-icon icon-violet">▰</span>
+                </div>
+
+                <h2 id="batteryCharge">78<small>%</small></h2>
+
+                <div
+                    class="battery-track"
+                    role="progressbar"
+                    aria-label="Simulated battery charge"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="78"
+                >
+                    <div id="batteryFill" class="battery-fill"></div>
+                </div>
+
+                <div class="metric-foot">
+                    Simulated value · not live telemetry
+                </div>
+            </article>
+
+            <article class="metric metric-alert">
+                <div class="metric-top">
+                    <span class="metric-label">Critical overloads</span>
+                    <span class="metric-icon icon-red">!</span>
+                </div>
+
+                <h2 id="alertCount">0</h2>
+
+                <div class="metric-foot">
+                    <span class="metric-indicator red-indicator"></span>
+                    Hours at or above 200 kW
+                </div>
+            </article>
+
+        </section>
+
+        <!-- Overload alert -->
+        <section
+            id="alertBanner"
+            class="alert-banner hidden"
+            role="alert"
+            aria-live="polite"
+        >
+            <div class="alert-symbol">!</div>
+
+            <div class="alert-copy">
+                <strong>Critical overload risk detected</strong>
+                <p id="alertMessage"></p>
+            </div>
+
+            <span class="alert-tag">ACTION REQUIRED</span>
+        </section>
+
+        <!-- Demand chart -->
+        <section class="panel forecast-panel">
+            <div class="panel-heading">
+                <div>
+                    <div class="section-kicker">DEMAND ANALYTICS</div>
+                    <h2>24-hour demand forecast</h2>
+                    <p>
+                        Predicted electricity demand across the forecast window.
+                    </p>
+                </div>
+
+                <div class="chart-legend-custom">
+                    <span class="legend-line"></span>
+                    Predicted demand
+                    <span class="unit-tag">kW</span>
+                </div>
+            </div>
+
+            <div class="chart-summary">
+                <span>
+                    <span class="legend-dot teal-dot"></span>
+                    Model prediction
+                </span>
+
+                <span>
+                    <span class="legend-dash"></span>
+                    Critical threshold · 200 kW
+                </span>
+            </div>
+
+            <div class="chart-wrap">
+                <canvas
+                    id="demandChart"
+                    aria-label="Line chart of predicted hourly energy demand"
+                    role="img"
+                >
+                    Your browser does not support charts.
+                </canvas>
+            </div>
+        </section>
+
+        <!-- Dispatch table -->
+        <section class="panel dispatch-panel">
+            <div class="panel-heading dispatch-heading">
+                <div>
+                    <div class="section-kicker">CONTROL DECISIONS</div>
+                    <h2>Hourly power dispatch</h2>
+                    <p>
+                        Recommended source and overload status for each forecast hour.
+                    </p>
+                </div>
+
+                <span class="table-count" id="rowCount">
+                    24 forecast hours
+                </span>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">TIME</th>
+                            <th scope="col">PREDICTED DEMAND</th>
+                            <th scope="col">POWER SOURCE</th>
+                            <th scope="col">SYSTEM STATUS</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="forecastRows">
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                Loading forecast data…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-note">
+                <span class="tiny-live-dot"></span>
+                Decisions are generated from forecast values and configured
+                controller rules.
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <a class="footer-brand" href="#">
+                <span>ϟ</span> GridSense
+            </a>
+
+            <span>HackSphere 3.0 · Smart Energy Intelligence</span>
+
+            <span class="footer-note">
+                Prototype · Not connected to physical grid hardware
+            </span>
+        </footer>
+
+    </main>
+</div>
+
+<!-- Load application code after Chart.js and page elements -->
+<script src="/script.js"></script>
+</body>
+</html>
