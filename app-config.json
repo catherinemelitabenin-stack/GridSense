@@ -1,12 +1,8 @@
 {
-    "command":  "sh -c \u0027python3 -m pip install --user -r requirements.txt \u0026\u0026 python3 -m gunicorn --bind 0.0.0.0:${X_ZOHO_CATALYST_LISTEN_PORT:-9000} --workers 1 --timeout 120 app:app\u0027",
-    "buildPath":  "./",
-    "stack":  "python_3_11",
-    "env_variables":  {
-
-                      },
-    "memory":  512,
-    "scripts":  {
-
-                }
+  "command": "python3 -m gunicorn --bind 0.0.0.0:${X_ZOHO_CATALYST_LISTEN_PORT:-9000} --workers 1 --timeout 120 app:app",
+  "buildPath": "./",
+  "stack": "python_3_11",
+  "env_variables": {},
+  "memory": 512,
+  "scripts": {}
 }
